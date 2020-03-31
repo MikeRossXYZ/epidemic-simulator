@@ -90,7 +90,7 @@ def create_relations(ctx, population):
     return relations_all
 
 def run_simulation(ctx):
-    PROB_INFECTING = 0.10
+    PROB_INFECTING_RANDOM = 0.10
 
     # Create the list of entities (people) in the simulation
     population = create_population(ctx)
@@ -99,12 +99,12 @@ def run_simulation(ctx):
     relations_all = create_relations(ctx, population)
 
     # Initial infected
-    for infected in random.sample(population, 10):
+    for infected in random.sample(population, 5):
         infected.health_status = "Infected"
 
     # Simulation loop
-    print("Available,Infected,Resolved")
-    for day in range(125):
+    ctx.output("Susceptible,Infected,Resolved")
+    for day in range(60):
         # Loop through each relationship to see if they infect the person
         for relation in relations_all:
             relation_expose(ctx, relation, relation.p1, relation.p2)
@@ -115,11 +115,14 @@ def run_simulation(ctx):
             stranger = random.choice(population)
             if stranger != person:
                 if person.health_status == "Infected" and stranger.health_status == "Susceptible":
-                    if random.random() < PROB_INFECTING:
+                    if random.random() < PROB_INFECTING_RANDOM:
                         stranger.health_status = "Infected"
 
             # Handle resolving infections
             update_health_status(person)
             counts[person.health_status] += 1
 
-        print(counts["Susceptible"], counts["Infected"], counts["Resolved"], sep=",")
+        ctx.output(str(counts["Susceptible"]) + "," + str(counts["Infected"]) + "," + str(counts["Resolved"]))
+
+    # Close the output process
+    ctx.output(None)

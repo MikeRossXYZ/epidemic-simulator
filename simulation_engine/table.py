@@ -14,14 +14,14 @@ def tbl_get(tbl_dict, name):
         return None
 
 def tbl_lookup_value(tbl, criteria):
-    key = tbl_record_criteria_key(criteria)
+    key = _tbl_record_criteria_key(criteria)
     if key in tbl.records:
         return tbl.records[key].value
     else:
         return None
 
 def tbl_insert_record(tbl, criteria, value):
-    key = tbl_record_criteria_key(criteria)
+    key = _tbl_record_criteria_key(criteria)
     
     if key in tbl.records:
         rec = tbl.records.pop(key)
@@ -34,7 +34,7 @@ def tbl_insert_record(tbl, criteria, value):
     
     tbl.records[key] = record
 
-def tbl_record_criteria_key(criteria):
+def _tbl_record_criteria_key(criteria):
     criteria_lst = [(key, val) for key, val in criteria.items()]
     criteria_sorted_tuple_lst = sorted(criteria_lst, key=lambda criterion: criterion[0])
     return "__".join([x[0] + "_" + x[1] for x in criteria_sorted_tuple_lst])
