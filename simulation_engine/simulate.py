@@ -5,19 +5,24 @@ import config as config
 from entity import Entity
 from relation import Relation
 
+from constants import HealthStatus
+
+
 def update_health_status(entity):
-    if (entity.health_status == "Infected"):
+    if (entity.health_status == HealthStatus.Infected):
         if (entity.days_at_health_status > 10):
-            entity.health_status = "Resolved"
+            entity.health_status = HealthStatus.Resolved
             entity.days_at_health_status = 0
-    
+
     entity.days_at_health_status += 1
     return entity.health_status
+
 
 def relation_expose(ctx, relation, entity1, entity2):
     infection_prob_tbl = ctx.tables["infection_probability"]
 
-    if (entity1.health_status == "Infected" and entity2.health_status == "Susceptible"):
+    if (entity1.health_status == HealthStatus.Infected
+            and entity2.health_status == HealthStatus.Susceptible):
         prob_infect = table.tbl_lookup_value(infection_prob_tbl, {
             "connection_type": relation.name,
             "behaviour_infected": entity1.behaviour,
@@ -25,10 +30,11 @@ def relation_expose(ctx, relation, entity1, entity2):
         })
 
         if (random.random() < prob_infect):
-            entity2.health_status = "Infected"
+            entity2.health_status = HealthStatus.Infected
             entity2.days_at_health_status = 0
 
-    if (entity2.health_status == "Infected" and entity1.health_status == "Susceptible"):
+    if (entity2.health_status == HealthStatus.Infected
+            and entity1.health_status == HealthStatus.Susceptible):
         prob_infect = table.tbl_lookup_value(infection_prob_tbl, {
             "connection_type": relation.name,
             "behaviour_infected": entity2.behaviour,
@@ -36,8 +42,9 @@ def relation_expose(ctx, relation, entity1, entity2):
         })
 
         if (random.random() < prob_infect):
-            entity1.health_status = "Infected"
+            entity1.health_status = HealthStatus.Infected
             entity1.days_at_health_status = 0
+
 
 def create_group(name, entity_lst):
     edges = []
@@ -56,6 +63,7 @@ def create_population(ctx):
     for i in range(10000):
         population.append(Entity(str(i)))
     return population
+
 
 def create_relations(ctx, population):
     relations_all = []
@@ -89,6 +97,7 @@ def create_relations(ctx, population):
 
     return relations_all
 
+
 def run_simulation(ctx):
     PROB_INFECTING_RANDOM = 0.10
 
@@ -100,7 +109,7 @@ def run_simulation(ctx):
 
     # Initial infected
     for infected in random.sample(population, 5):
-        infected.health_status = "Infected"
+        infected.health_status = HealthStatus.Infected
 
     # Simulation loop
     ctx.output("Susceptible,Infected,Resolved")
@@ -109,20 +118,24 @@ def run_simulation(ctx):
         for relation in relations_all:
             relation_expose(ctx, relation, relation.p1, relation.p2)
 
-        counts = {"Susceptible": 0, "Infected": 0, "Resolved": 0}   
+        counts = {
+            HealthStatus.Susceptible: 0,
+            HealthStatus.Infected: 0,
+            HealthStatus.Resolved: 0
+        }
         for person in population:
             # Will we randomly infect a stranger?
             stranger = random.choice(population)
             if stranger != person:
-                if person.health_status == "Infected" and stranger.health_status == "Susceptible":
+                if person.health_status == HealthStatus.Infected and stranger.health_status == HealthStatus.Susceptible:
                     if random.random() < PROB_INFECTING_RANDOM:
-                        stranger.health_status = "Infected"
+                        stranger.health_status = HealthStatus.Infected
 
             # Handle resolving infections
             update_health_status(person)
             counts[person.health_status] += 1
 
-        ctx.output(str(counts["Susceptible"]) + "," + str(counts["Infected"]) + "," + str(counts["Resolved"]))
+        ctx.output(f"{counts[HealthStatus.Susceptible]},{counts[HealthStatus.Infected]},{counts[HealthStatus.Resolved]}")
 
     # Close the output process
     ctx.output(None)
